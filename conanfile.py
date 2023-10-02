@@ -35,17 +35,11 @@ class ZenohCConan(ConanFile):
         git.clone(url=sources["url"], target=self.source_folder)
         git.checkout(commit=sources["commit"])
 
-    def build(self):
-        replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
-            """COMMAND cargo +${ZENOHC_CARGO_CHANNEL} build ${cargo_flags}""",
-            """COMMAND cargo build ${cargo_flags}""")
-        replace_in_file(self, os.path.join(self.source_folder, "Cargo.toml.in"),
-            """branch = "master" """,
-            """tag = "0.7.2-rc" """)
-        replace_in_file(self, os.path.join(self.source_folder, "Cargo.toml.in"),
-            """branch = "master", """,
-            """tag = "0.7.2-rc", """)
+    def _configure_toolchain(self, tc):
+        if self.settings.os == "WindowsStore" and self.settings.arch == "armv8":
+            tc.cache_variables["ZENOHC_CARGO_CHANNEL"] = "nightly"
+            tc.cache_variables["ZENOHC_CUSTOM_TARGET"] = "aarch64-uwp-windows-msvc"
+            tc.cache_variables["ZENOHC_CARGO_FLAGS"] = "-Z build-std=panic_abort,std"
+            tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = False
 
 
-
-        super().build()
