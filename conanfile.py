@@ -56,7 +56,7 @@ class ZenohCConan(ConanFile):
 
     def package(self):
         if self.settings.os == "WindowsStore" and self.settings.arch == "armv8":
-            bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc')
+            bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc', 'release')
             # clean up before recursive copy
             rm(self, "*.dll", os.path.join(bin_path, "deps"))
             rm(self, "*.lib", os.path.join(bin_path, "deps"))
