@@ -34,28 +34,55 @@ class ZenohCConan(ConanFile):
         git.clone(url=sources["url"], target=self.source_folder)
         git.checkout(commit=sources["commit"])
 
-    def _configure_toolchain(self, tc):
-        if self.settings.os == "WindowsStore" and self.settings.arch == "armv8":
+
+    @property
+    def is_uwp_armv8(self):
+        return self.settings.os == "WindowsStore" and self.settings.arch == "armv8"
+    
+
+    def generate(self):
+        if self.is_uwp_armv8:
+            return
+
+        tc = CMakeToolchain(self)
+        def add_cmake_option(option, value):
+            var_name = "{}".format(option).upper()
+            value_str = "{}".format(value)
+            var_value = "ON" if value_str == 'True' else "OFF" if value_str == 'False' else value_str
+            tc.variables[var_name] = var_value
+
+        for option, value in self.options.items():
+            add_cmake_option(option, value)
+
+        if self.is_uwp_armv8:
             tc.cache_variables["ZENOHC_CARGO_CHANNEL"] = "nightly"
             tc.cache_variables["ZENOHC_CUSTOM_TARGET"] = "aarch64-uwp-windows-msvc"
             tc.cache_variables["ZENOHC_CARGO_FLAGS"] = "-Zbuild-std=panic_abort,std"
             tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = False
 
+        tc.generate()
 
+        deps = CMakeDeps(self)
+
+        deps.generate()
+
+    def layout(self):
+        cmake_layout(self)
 
     def build(self):
-        if self.settings.os == "WindowsStore" and self.settings.arch == "armv8":
+        if self.is_uwp_armv8:
             be = VirtualRunEnv(self)
             with be.vars(scope="run").apply():
                 # try hardcoded for now ..
                 # conan-cmake seems to mess with some environment/settings
                 self.run("cargo +nightly build -Zbuild-std=panic_abort,std --release --features=logger-autoinit --target=aarch64-uwp-windows-msvc")
         else:
-            super().build()
-
+            cmake = CMake(self)
+            cmake.configure()
+            cmake.build()
 
     def package(self):
-        if self.settings.os == "WindowsStore" and self.settings.arch == "armv8":
+        if self.is_uwp_armv8:
             bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc', 'release')
             # clean up before recursive copy
             rm(self, "*.dll", os.path.join(bin_path, "deps"))
@@ -65,4 +92,8 @@ class ZenohCConan(ConanFile):
             copy(self, "zenohc.lib", bin_path, os.path.join(self.package_folder, "lib"), keep_path=False)
             copy(self, "*.h", os.path.join(self.source_folder, "include"), os.path.join(self.package_folder, "include"))
         else:
-            super().package()
+            cmake = CMake(self)
+            cmake.install()
+
+    def package_info(self):
+        self.cpp_info.libs = collect_libs(self)
