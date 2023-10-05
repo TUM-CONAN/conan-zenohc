@@ -5,6 +5,7 @@ from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from conan.tools.scm import Git
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout, CMakeDeps
 from conan.tools.microsoft import VCVars
+from conan.tools.layout import basic_layout
 
 class ZenohCConan(ConanFile):
 
@@ -41,8 +42,6 @@ class ZenohCConan(ConanFile):
     
 
     def generate(self):
-        if self.is_uwp_armv8:
-            return
 
         tc = CMakeToolchain(self)
         def add_cmake_option(option, value):
@@ -54,11 +53,13 @@ class ZenohCConan(ConanFile):
         for option, value in self.options.items():
             add_cmake_option(option, value)
 
+        # not used as workaround below, but in theory that would be the right settings
         if self.is_uwp_armv8:
             tc.cache_variables["ZENOHC_CARGO_CHANNEL"] = "nightly"
             tc.cache_variables["ZENOHC_CUSTOM_TARGET"] = "aarch64-uwp-windows-msvc"
             tc.cache_variables["ZENOHC_CARGO_FLAGS"] = "-Zbuild-std=panic_abort,std"
             tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = False
+            return
 
         tc.generate()
 
@@ -67,7 +68,10 @@ class ZenohCConan(ConanFile):
         deps.generate()
 
     def layout(self):
-        cmake_layout(self)
+        if self.is_uwp_armv8:
+            basic_layout(self)
+        else:
+            cmake_layout(self)
 
     def build(self):
         if self.is_uwp_armv8:
