@@ -37,9 +37,16 @@ class ZenohCConan(ConanFile):
 
 
     @property
+    def is_win(self):
+        return self.settings.os == "Windows" or self.settings.os == "WindowsStore"
+
+    @property
     def is_uwp_armv8(self):
         return self.settings.os == "WindowsStore" and self.settings.arch == "armv8"
     
+    @property
+    def is_win_x64(self):
+        return self.settings.os == "Windows" and self.settings.arch == "x86_64"
 
     def generate(self):
 
@@ -79,25 +86,44 @@ class ZenohCConan(ConanFile):
             with be.vars(scope="run").apply():
                 # try hardcoded for now ..
                 # conan-cmake seems to mess with some environment/settings
-                self.run("cargo +nightly build -Zbuild-std=panic_abort,std --release --features=logger-autoinit --target=aarch64-uwp-windows-msvc")
+                rel_flag = ""
+                if self.settings.build_type == "Release":
+                    rel_flag = " --release"
+                self.run("cargo +nightly build -Zbuild-std=panic_abort,std{0} --features=logger-autoinit --target=aarch64-uwp-windows-msvc".format(rel_flag))
         else:
             cmake = CMake(self)
             cmake.configure()
             cmake.build()
 
+    def _zenoh_lib_name(self):
+        name = "zenohc"
+        if not self.is_win and self.settings.build_type == "Debug":
+            name += "d"
+        return name
+
     def package(self):
-        if self.is_uwp_armv8:
-            bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc', 'release')
-            # clean up before recursive copy
-            rm(self, "*.dll", os.path.join(bin_path, "deps"))
-            rm(self, "*.lib", os.path.join(bin_path, "deps"))
-            # Manually copy the files in the target (needs to be adapted if debug build is enabled ..)
-            copy(self, "zenohc.dll", bin_path, os.path.join(self.package_folder, "bin"), keep_path=False)
-            copy(self, "zenohc.lib", bin_path, os.path.join(self.package_folder, "lib"), keep_path=False)
-            copy(self, "*.h", os.path.join(self.source_folder, "include"), os.path.join(self.package_folder, "include"))
+        if self.is_win:
+            bin_path = None
+            folder = "release" if self.settings.build_type == "Release" else "debug"
+            if self.is_uwp_armv8:
+                bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc', folder)
+            if self.is_win_x64:
+                bin_path = os.path.join(self.source_folder, "target", folder)
+
+            if bin_path is not None:
+                # clean up before recursive copy
+                rm(self, "*.dll", os.path.join(bin_path, "deps"))
+                rm(self, "*.lib", os.path.join(bin_path, "deps"))
+                # Manually copy the files in the target (needs to be adapted if debug build is enabled ..)
+
+                copy(self, "*.dll", bin_path, os.path.join(self.package_folder, "bin"), keep_path=False)
+                copy(self, "*.lib", bin_path, os.path.join(self.package_folder, "lib"), keep_path=False)
+                copy(self, "*.h", os.path.join(self.source_folder, "include"), os.path.join(self.package_folder, "include"))
+            else:
+                self.output.error("Unknown Windows platform - install incomplete !!!")
         else:
             cmake = CMake(self)
             cmake.install()
 
     def package_info(self):
-        self.cpp_info.libs = collect_libs(self)
+        self.cpp_info.libs = [self._zenoh_lib_name()]
