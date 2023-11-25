@@ -136,7 +136,7 @@ class ZenohCConan(ConanFile):
             if self.is_uwp_armv8:
                 bin_path = os.path.join(self.source_folder, "target", 'aarch64-uwp-windows-msvc', folder)
             if self.is_win_x64:
-                bin_path = os.path.join(self.source_folder, "target", folder)
+                bin_path = os.path.join(self.build_folder, folder, "target", folder)
 
             if bin_path is not None:
                 # clean up before recursive copy
