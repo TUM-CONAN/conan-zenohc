@@ -1,6 +1,7 @@
 import os
+from textwrap import dedent
 from conan import ConanFile
-from conan.tools.files import update_conandata, copy, rm, chdir, mkdir, collect_libs, replace_in_file
+from conan.tools.files import update_conandata, copy, rm, chdir, mkdir, collect_libs, replace_in_file, save, rename
 from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from conan.tools.scm import Git
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout, CMakeDeps
@@ -10,7 +11,7 @@ from conan.tools.layout import basic_layout
 class ZenohCConan(ConanFile):
 
     name = "zenoh-c"
-    version = "0.7.2-rc"
+    version = "0.10.0-rc"
     
     license = "Apache License 2.0"
     author = "Ulrich Eck"
@@ -24,8 +25,8 @@ class ZenohCConan(ConanFile):
 
     def export(self):
         update_conandata(self, {"sources": {
-            "commit": "master",  # "{}".format(self.version),
-            "url": "https://github.com/TUM-CAMP-NARVIS/zenoh-c.git"
+            "commit": "{}".format(self.version),
+            "url": "https://github.com/eclipse-zenoh/zenoh-c.git"
             }}
             )
 
@@ -80,7 +81,34 @@ class ZenohCConan(ConanFile):
         else:
             cmake_layout(self)
 
+    def patch_sources(self):
+        if self.is_uwp_armv8:
+            self.output.info("Patching sources for UWP.")
+            # use nightly toolchain
+            rename(self, os.path.join(self.source_folder, "rust-toolchain"), os.path.join(self.source_folder, "disabled-rust-toolchain"))
+            save(self, os.path.join(self.source_folder, "rust-toolchain.toml"), 
+                dedent("""
+                [toolchain]
+                # +nightly is required to enable the build-std feature. The following specifies that the
+                # latest version be used. It can be pinned here to a specific version, e.g.
+                # "nightly-2021-08-12".
+                channel = "nightly"
+                components = ["rust-src"]
+                """))
+            # add specific version of ring that is compatible with uwp
+            save(self, os.path.join(self.source_folder, "Cargo.toml"), 
+                dedent("""
+                
+                [patch.crates-io]
+                ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }
+                """), append=True)
+            replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
+                """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain""",
+                """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain.toml""")
+
+
     def build(self):
+        self.patch_sources()
         if self.is_uwp_armv8:
             be = VirtualRunEnv(self)
             with be.vars(scope="run").apply():
