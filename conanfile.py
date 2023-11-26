@@ -146,6 +146,7 @@ class ZenohCConan(ConanFile):
 
                 copy(self, "*.dll", bin_path, os.path.join(self.package_folder, "bin"), keep_path=False)
                 copy(self, "*.lib", bin_path, os.path.join(self.package_folder, "lib"), keep_path=False)
+                copy(self, "*.h", os.path.join(self.build_folder, folder, "include"), os.path.join(self.package_folder, "include"))
                 copy(self, "*.h", os.path.join(self.source_folder, "include"), os.path.join(self.package_folder, "include"))
             else:
                 self.output.error("Unknown Windows platform - install incomplete !!!")
