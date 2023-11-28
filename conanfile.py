@@ -125,7 +125,7 @@ class ZenohCConan(ConanFile):
 
     def _zenoh_lib_name(self):
         name = "zenohc"
-        if not self.is_win and self.settings.build_type == "Debug":
+        if self.settings.build_type == "Debug":
             name += "d"
         return name
 
