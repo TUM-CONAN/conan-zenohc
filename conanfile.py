@@ -11,7 +11,7 @@ from conan.tools.layout import basic_layout
 class ZenohCConan(ConanFile):
 
     name = "zenoh-c"
-    version = "0.10.0-rc"
+    version = "0.10.1-rc"
     
     license = "Apache License 2.0"
     author = "Ulrich Eck"
