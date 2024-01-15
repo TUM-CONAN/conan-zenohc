@@ -85,7 +85,7 @@ class ZenohCConan(ConanFile):
         if self.is_uwp_armv8:
             self.output.info("Patching sources for UWP.")
             # use nightly toolchain
-            rename(self, os.path.join(self.source_folder, "rust-toolchain"), os.path.join(self.source_folder, "disabled-rust-toolchain"))
+            #rename(self, os.path.join(self.source_folder, "rust-toolchain"), os.path.join(self.source_folder, "disabled-rust-toolchain"))
             save(self, os.path.join(self.source_folder, "rust-toolchain.toml"), 
                 dedent("""
                 [toolchain]
