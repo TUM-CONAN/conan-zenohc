@@ -102,10 +102,14 @@ class ZenohCConan(ConanFile):
                 [patch.crates-io]
                 ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }
                 """), append=True)
+
             replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
                 """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain""",
                 """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain.toml""")
 
+            replace_in_file(self, os.path.join(self.source_folder, "Cargo.toml"),
+                'async-std = "=1.12.0"',
+                'ahash = "0.8.9"\nasync-std = "=1.12.0"')
 
     def build(self):
         self.patch_sources()
