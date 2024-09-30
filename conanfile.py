@@ -11,7 +11,7 @@ from conan.tools.layout import basic_layout
 class ZenohCConan(ConanFile):
 
     name = "zenoh-c"
-    version = "0.10.1-rc"
+    version = "0.11.0"
     
     license = "Apache License 2.0"
     author = "Ulrich Eck"
@@ -103,13 +103,13 @@ class ZenohCConan(ConanFile):
                 ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }
                 """), append=True)
 
-            replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
-                """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain""",
-                """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain.toml""")
+            # replace_in_file(self, os.path.join(self.source_folder, "CMakeLists.txt"),
+            #     """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain""",
+            #     """${CMAKE_CURRENT_SOURCE_DIR}/rust-toolchain.toml""")
 
-            replace_in_file(self, os.path.join(self.source_folder, "Cargo.toml"),
-                'async-std = "=1.12.0"',
-                'ahash = "0.8.9"\nasync-std = "=1.12.0"')
+            # replace_in_file(self, os.path.join(self.source_folder, "Cargo.toml"),
+            #     'async-std = "=1.12.0"',
+            #     'ahash = "0.8.9"\nasync-std = "=1.12.0"')
 
     def build(self):
         self.patch_sources()
