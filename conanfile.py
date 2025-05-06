@@ -20,6 +20,14 @@ class ZenohCConan(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
 
+    options = {
+        "shared": [True, False],
+        "fPIC": [True, False],
+    }
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+    }
 
     exports_sources = "CMakeLists.txt"
 
@@ -66,8 +74,10 @@ class ZenohCConan(ConanFile):
             tc.cache_variables["ZENOHC_CARGO_CHANNEL"] = "nightly"
             tc.cache_variables["ZENOHC_CUSTOM_TARGET"] = "aarch64-uwp-windows-msvc"
             tc.cache_variables["ZENOHC_CARGO_FLAGS"] = "-Zbuild-std=panic_abort,std"
-            tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = False
             return
+
+        tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = True
+        tc.cache_variables["ZENOHC_BUILD_WITH_UNSTABLE_API"] = True
 
         tc.generate()
 
@@ -157,6 +167,13 @@ class ZenohCConan(ConanFile):
         else:
             cmake = CMake(self)
             cmake.install()
+
+            if self.settings.os == "Linux":
+                if self.options.shared:
+                    rm(self, "*.a", os.path.join(self.package_folder, "lib"), recursive=False)
+                else:
+                    rm(self, "*.so", os.path.join(self.package_folder, "lib"), recursive=False)
+            # what about other platforms?
 
     def package_info(self):
         self.cpp_info.libs = [self._zenoh_lib_name()]
