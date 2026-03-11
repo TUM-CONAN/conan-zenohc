@@ -57,6 +57,10 @@ class ZenohCConan(ConanFile):
     def is_win_x64(self):
         return self.settings.os == "Windows" and self.settings.arch == "x86_64"
 
+    @property
+    def is_android_armv8(self):
+        return self.settings.os == "Android" and self.settings.arch == "armv8"
+
     def generate(self):
 
         tc = CMakeToolchain(self)
@@ -76,7 +80,10 @@ class ZenohCConan(ConanFile):
             tc.cache_variables["ZENOHC_CARGO_FLAGS"] = "-Zbuild-std=panic_abort,std"
             return
 
-        tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = True
+        if self.is_android_armv8:
+            tc.cache_variables["ZENOHC_CUSTOM_TARGET"] = "aarch64-linux-android"
+
+        tc.cache_variables["ZENOHC_BUILD_WITH_SHARED_MEMORY"] = not self.is_android_armv8
         tc.cache_variables["ZENOHC_BUILD_WITH_UNSTABLE_API"] = True
 
         tc.generate()
